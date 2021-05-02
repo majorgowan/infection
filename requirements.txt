@@ -1,0 +1,4 @@
+numpy==0.20
+celluloid==0.2
+matplotlib==3.4
+jupyterlab==3.0.14
