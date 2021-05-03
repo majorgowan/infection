@@ -167,7 +167,8 @@ class Infection:
                 )
                 person.infect(incubation=incubation,
                               healing_rate=healing_rate,
-                              severity=severity)
+                              severity=severity,
+                              temperature=self.temperature_)
 
         # update people
         for person in self.people_:

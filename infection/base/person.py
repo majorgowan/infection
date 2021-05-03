@@ -242,7 +242,6 @@ class Person:
         else:
             temp0 = self.get_temperature(temperature)
         if np.random.random() < severity * (temp0 - self.immunity_):
-            # print(f"{temp0:.4f}\t {self.immunity_:.4f}")
             self.severity_ = severity
             self.healing_rate_ = healing_rate
             self.incubation_ = incubation
@@ -295,5 +294,11 @@ class Person:
         return [person for person in people if person.immune(temperature)]
 
     @staticmethod
+    def non_immune_people(people, temperature):
+        return [person for person in people if not person.immune(temperature)]
+
+    @staticmethod
     def susceptible_people(people, temperature):
-        return [person for person in people if ~person.immune(temperature)]
+        return [person for person in people
+                if not person.immune(temperature)
+                and not person.infected]

@@ -33,7 +33,7 @@ def plot_frame(fig, people, temperature, walls):
     ----------
     fig : matplotlib.pyplot.Figure object
         figure in which to plot current frame
-    people : list
+    people : list[Person]
         Person objects to visualize
     temperature : Temperature object
         temperature field to visualize
@@ -53,27 +53,30 @@ def plot_frame(fig, people, temperature, walls):
                 levels=levels, alpha=0.5, cmap="Reds",
                 extend="max")
 
+    point_size = int(10000 / len(people))
+    wall_width = int(np.sqrt(point_size))
+
     # draw walls
     for wall in walls:
         if wall.orient == "h":
-            ax.hlines(wall.y, *wall.x, linewidth=4, color="k")
+            ax.hlines(wall.y, *wall.x, linewidth=wall_width, color="k")
         else:
-            ax.vlines(wall.x, *wall.y, linewidth=4, color="k")
+            ax.vlines(wall.x, *wall.y, linewidth=wall_width, color="k")
 
     # plot the immune people
     immune_people = Person.immune_people(people, temperature)
     positions = Person.positions(immune_people)
     immunities = Person.immunities(immune_people)
     ax.scatter(positions[:, 0], positions[:, 1],
-               s=100, c=immunities, marker="o",
+               s=point_size, c=immunities, marker="o",
                cmap="Blues", vmin=-0.2, vmax=1)
 
     # plot the infected and susceptible people
-    susceptible_people = Person.susceptible_people(people, temperature)
+    susceptible_people = Person.non_immune_people(people, temperature)
     healths = Person.healths(susceptible_people)
     positions = Person.positions(susceptible_people)
     ax.scatter(positions[:, 0], positions[:, 1],
-               s=100, c=healths, marker="o",
+               s=point_size, c=healths, marker="o",
                vmin=-0.2, vmax=1.5, cmap="copper")
 
     # plot speeds
