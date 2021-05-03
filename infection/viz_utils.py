@@ -8,7 +8,7 @@ Email:   majorgowan@yahoo.com
 """
 import numpy as np
 import matplotlib.pyplot as plt
-from base import Person
+from infection.base import Person
 
 plt.style.use("bmh")
 
@@ -41,9 +41,9 @@ def plot_frame(fig, people, temperature):
     ax = fig.gca()
 
     amplitude = (temperature.intensity / np.sqrt(2 * np.pi)
-                 / temperature.spatial_decay)
+                 / temperature.hotspot_radius)
 
-    levels = np.linspace(0, 3 * amplitude, 40)
+    levels = np.linspace(0, 4 * amplitude, 40)
 
     # plot the temperature field
     qcf = ax.contourf(temperature.xx, temperature.yy,

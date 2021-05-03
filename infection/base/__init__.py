@@ -1,5 +1,5 @@
-from person import Person
-from temperature import Temperature
+from infection.base.person import Person
+from infection.base.temperature import Temperature
 
 
 __all__ = [

@@ -49,7 +49,7 @@ class Person:
         self.immunity_ = 0
         self.infected = False
         self.incubating = False
-        self.decay_ = None
+        self.healing_rate_ = None
 
     @property
     def health(self):
@@ -90,16 +90,16 @@ class Person:
 
         Parameters
         ----------
-        temperature : dict
+        temperature : Temperature object
             with keys "xx", "yy", and "temperature"
 
         Returns
         -------
         float
         """
-        nextx = self.get_next(temperature["xx"][0, :] >= self.x)
-        nexty = self.get_next(temperature["yy"][:, 0] >= self.y)
-        return temperature["temperature"][nexty, nextx]
+        nextx = self.get_next(temperature.xx[0, :] >= self.x)
+        nexty = self.get_next(temperature.yy[:, 0] >= self.y)
+        return temperature.temperature[nexty, nextx]
 
     def get_temperature_gradient(self, temperature):
         """
@@ -108,7 +108,7 @@ class Person:
 
         Parameters
         ----------
-        temperature : dict
+        temperature : Temperature object
             with keys "xx", "yy", and "temperature"
 
         Returns
@@ -118,10 +118,10 @@ class Person:
         grady : float
             y-coordinate of gradient
         """
-        nextx = self.get_next(temperature["xx"][0, :] >= self.x)
-        nexty = self.get_next(temperature["yy"][:, 0] >= self.y)
-        return (temperature["gradx"][nexty, nextx],
-                temperature["grady"][nexty, nextx])
+        nextx = self.get_next(temperature.xx[0, :] >= self.x)
+        nexty = self.get_next(temperature.yy[:, 0] >= self.y)
+        return (temperature.gradx[nexty, nextx],
+                temperature.grady[nexty, nextx])
 
     def immune(self, temperature):
         """
@@ -130,7 +130,7 @@ class Person:
 
         Parameters
         ----------
-        temperature : dict
+        temperature : Temperature object
             temperature field
 
         Returns
@@ -145,7 +145,7 @@ class Person:
 
         Parameters
         ----------
-        temperature : dict
+        temperature : Temperature object
             temperature field
         """
         self.move()
@@ -165,7 +165,7 @@ class Person:
             return
         if not self.incubating:
             # heal
-            self.health_ += self.decay_ * (1 - self.health)
+            self.health_ += self.healing_rate_ * (1 - self.health)
             if self.health_ >= 0.9:
                 # fully healed
                 self.immunity_ = self.immunity
@@ -210,7 +210,7 @@ class Person:
 
         Parameters
         ----------
-        temperature : dict
+        temperature : Temperature object
             temperature field
         """
         if not self.infected:
@@ -218,20 +218,20 @@ class Person:
             self.dx += self.hypochondria * dx
             self.dy += self.hypochondria * dy
 
-    def infect(self, incubation_time, decay, severity, temperature=None):
+    def infect(self, incubation, healing_rate, severity, temperature=None):
         """
         (Try to) infect this person if immunity is weaker than local
         temperature is hot.
 
         Parameters
         ----------
-        incubation_time : int
+        incubation : int
             time before the person will become ill if infected
-        decay : float
-            rate of recovery if infected [TODO: change name)
+        healing_rate : float
+            rate of recovery if infected
         severity : float
             initial severity of disease if infected
-        temperature : dict
+        temperature : Temperature object
             temperature field
         """
         if temperature is None:
@@ -241,8 +241,8 @@ class Person:
         if np.random.random() < severity * (temp0 - self.immunity_):
             # print(f"{temp0:.4f}\t {self.immunity_:.4f}")
             self.severity_ = severity
-            self.decay_ = decay
-            self.incubation_ = incubation_time
+            self.healing_rate_ = healing_rate
+            self.incubation_ = incubation
             self.incubating = True
             self.infected = True
 
