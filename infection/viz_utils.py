@@ -25,7 +25,7 @@ def plot_init():
     return fig
 
 
-def plot_frame(fig, people, temperature):
+def plot_frame(fig, people, temperature, walls):
     """
     Plot current state of people and temperature in figure object
 
@@ -37,6 +37,8 @@ def plot_frame(fig, people, temperature):
         Person objects to visualize
     temperature : Temperature object
         temperature field to visualize
+    walls : list[Wall]
+        reflecting walls
     """
     ax = fig.gca()
 
@@ -46,10 +48,17 @@ def plot_frame(fig, people, temperature):
     levels = np.linspace(0, 4 * amplitude, 40)
 
     # plot the temperature field
-    qcf = ax.contourf(temperature.xx, temperature.yy,
-                      temperature.temperature,
-                      levels=levels, alpha=0.5, cmap="Reds",
-                      extend="max")
+    ax.contourf(temperature.xx, temperature.yy,
+                temperature.temperature,
+                levels=levels, alpha=0.5, cmap="Reds",
+                extend="max")
+
+    # draw walls
+    for wall in walls:
+        if wall.orient == "h":
+            ax.hlines(wall.y, *wall.x, linewidth=4, color="k")
+        else:
+            ax.vlines(wall.x, *wall.y, linewidth=4, color="k")
 
     # plot the immune people
     immune_people = Person.immune_people(people, temperature)

@@ -1,6 +1,6 @@
 import numpy as np
 from pprint import pformat
-from infection import Person, Temperature
+from infection import Person, Temperature, Wall
 from infection.utils import supdate
 
 
@@ -41,17 +41,32 @@ class Infection:
                     "mean": 0.05,
                     "sigma": 0
                 },
-                "range": {
-                    "mean": 2,
-                    "sigma": 0
-                }
+                "walls": [
+                    {"orient": "h",
+                     "x": [0, 1],
+                     "y": 0},
+                    {"orient": "h",
+                     "x": [0, 1],
+                     "y": 1},
+                    {"orient": "v",
+                     "x": 0,
+                     "y": [0, 1]},
+                    {"orient": "v",
+                     "x": 1,
+                     "y": [0, 1]}
+                ]
             }
         }
         supdate(configuration, kwargs)
         self.configuration = configuration
+        # build walls
+        self.walls_ = []
         self.day_ = 0
         self.people_ = []
         self.temperature_ = None
+        # set walls
+        for wall_config in configuration["mobility"]["walls"]:
+            self.walls_.append(Wall(**wall_config))
 
     def initialize_people(self):
         """
@@ -71,10 +86,6 @@ class Infection:
 
         self.people_ = []
         for position, speed, direction in zip(positions, speeds, directions):
-            radius = np.random.normal(
-                loc=mobility["range"]["mean"],
-                scale=mobility["range"]["sigma"]
-            )
             immunity = np.random.normal(
                 loc=infect0["immunity"]["mean"],
                 scale=infect0["immunity"]["sigma"]
@@ -84,7 +95,6 @@ class Infection:
                 scale=mobility["hypochondria"]["sigma"]
             )
             self.people_.append(Person(x=position[0], y=position[1],
-                                       radius=radius,
                                        mobility=speed, direction=direction,
                                        hypochondria=hypochondria,
                                        immunity=immunity))
@@ -161,7 +171,7 @@ class Infection:
 
         # update people
         for person in self.people_:
-            person.update(self.temperature_)
+            person.update(self.temperature_, self.walls_)
 
     def run(self, steps, random_seed=333, restart=False):
         """

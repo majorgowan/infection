@@ -20,8 +20,6 @@ class Person:
         x-coordinate of initial position
     y : float
         y-coordinate of initial position
-    radius : float
-        range of movement away from initial position in both directions
     mobility : float
         initial speed when fully healthy
     direction : float
@@ -31,13 +29,10 @@ class Person:
     immunity : float
         initial level of immunity
     """
-    def __init__(self, x, y, radius, mobility, direction,
+    def __init__(self, x, y, mobility, direction,
                  hypochondria, immunity):
         self.x = x
         self.y = y
-        self.radius = radius
-        self.xmin, self.xmax = max(0.0, x - radius), min(1.0, x + radius)
-        self.ymin, self.ymax = max(0.0, y - radius), min(1.0, y + radius)
         self.dx = np.cos(direction)
         self.dy = np.sin(direction)
         self.mobility = mobility
@@ -139,7 +134,7 @@ class Person:
         """
         return self.immunity_ > self.get_temperature(temperature) + 0.1
 
-    def update(self, temperature):
+    def update(self, temperature, walls):
         """
         Update position, speed and health of person
 
@@ -147,8 +142,10 @@ class Person:
         ----------
         temperature : Temperature object
             temperature field
+        walls : list[Wall]
+            list of Wall objects
         """
-        self.move()
+        self.move(walls)
         self.accelerate(temperature)
         self.update_health()
         if self.immunity_ > 0.02:
@@ -180,29 +177,35 @@ class Person:
                 # count down incubation
                 self.incubation_ -= 1
 
-    def move(self):
+    def move(self, walls):
         """
         Move person based on current velocity and range
+
+        Parameters
+        ----------
+        walls : list
+            descriptions of horizontal and vertical walls at which person
+            reflects
         """
         vx, vy = self.velocity
 
-        if self.x + vx > self.xmax:
-            self.x = 2 * self.xmax - (self.x + vx)
-            self.dx *= -1
-        elif self.x + vx < self.xmin:
-            self.x = 2 * self.xmin - (self.x + vx)
-            self.dx *= -1
-        else:
-            self.x += vx
+        pos1 = [self.x, self.y]
+        pos2 = [self.x + vx, self.y + vy]
 
-        if self.y + vy > self.ymax:
-            self.y = 2 * self.ymax - (self.y + vy)
-            self.dy *= -1
-        elif self.y + vy < self.ymin:
-            self.y = 2 * self.ymin - (self.y + vy)
-            self.dy *= -1
-        else:
-            self.y += vy
+        # check if displacement hits a wall (two passes)
+        for _ in range(2):
+            for wall in walls:
+                landing = wall.bounce(pos1, pos2)
+                if landing is not None:
+                    pos2 = landing
+                    # flip the velocity direction
+                    if wall.orient == "h":
+                        self.dy *= -1
+                    else:
+                        # vertical wall
+                        self.dx *= -1
+
+        self.x, self.y = pos2
 
     def accelerate(self, temperature):
         """
@@ -250,11 +253,6 @@ class Person:
         return pformat({
             "x": self.x,
             "y": self.y,
-            "radius": self.radius,
-            "xmin": self.xmin,
-            "xmax": self.xmax,
-            "ymin": self.ymin,
-            "ymax": self.ymax,
             "dx": self.dx,
             "dy": self.dy,
             "mobility": self.mobility,
