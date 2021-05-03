@@ -1,0 +1,301 @@
+"""
+-------------------------------------------------------
+Base class for person in population
+-------------------------------------------------------
+Author:  Mark Fruman
+Email:   majorgowan@yahoo.com
+-------------------------------------------------------
+"""
+import numpy as np
+from pprint import pformat
+
+
+class Person:
+    """
+    Class representing a person in the population
+
+    Parameters
+    ----------
+    x : float
+        x-coordinate of initial position
+    y : float
+        y-coordinate of initial position
+    radius : float
+        range of movement away from initial position in both directions
+    mobility : float
+        initial speed when fully healthy
+    direction : float
+        angle to horizontal of initial velocity
+    hypochondria : float
+        extent to which person accelerates away from hotspots
+    immunity : float
+        initial level of immunity
+    """
+    def __init__(self, x, y, radius, mobility, direction,
+                 hypochondria, immunity):
+        self.x = x
+        self.y = y
+        self.radius = radius
+        self.xmin, self.xmax = max(0.0, x - radius), min(1.0, x + radius)
+        self.ymin, self.ymax = max(0.0, y - radius), min(1.0, y + radius)
+        self.dx = np.cos(direction)
+        self.dy = np.sin(direction)
+        self.mobility = mobility
+        self.hypochondria = hypochondria
+        self.health_ = 1
+        self.incubation_ = 0
+        self.severity_ = 0
+        self.immunity = immunity
+        self.immunity_ = 0
+        self.infected = False
+        self.incubating = False
+        self.decay_ = None
+
+    @property
+    def health(self):
+        return self.health_
+
+    @property
+    def speed(self):
+        return self.mobility * self.health
+
+    @property
+    def velocity(self):
+        vx = self.dx * self.speed
+        vy = self.dy * self.speed
+        return np.array([vx, vy])
+
+    @staticmethod
+    def get_next(array):
+        """
+        Return index of first True value in array
+
+        Parameters
+        ----------
+        array : 1-d numpy.array of bool
+            array to parse
+
+        Returns
+        -------
+        int
+        """
+        for ii, b in enumerate(array):
+            if b:
+                return ii
+        return len(array)
+
+    def get_temperature(self, temperature):
+        """
+        Get local temperature at current position of person
+
+        Parameters
+        ----------
+        temperature : dict
+            with keys "xx", "yy", and "temperature"
+
+        Returns
+        -------
+        float
+        """
+        nextx = self.get_next(temperature["xx"][0, :] >= self.x)
+        nexty = self.get_next(temperature["yy"][:, 0] >= self.y)
+        return temperature["temperature"][nexty, nextx]
+
+    def get_temperature_gradient(self, temperature):
+        """
+        Compute (negative) gradient of temperature field, i.e. direction
+        of maximum _decrease_ of temperature
+
+        Parameters
+        ----------
+        temperature : dict
+            with keys "xx", "yy", and "temperature"
+
+        Returns
+        -------
+        gradx : float
+            x-coordinate of gradient
+        grady : float
+            y-coordinate of gradient
+        """
+        nextx = self.get_next(temperature["xx"][0, :] >= self.x)
+        nexty = self.get_next(temperature["yy"][:, 0] >= self.y)
+        return (temperature["gradx"][nexty, nextx],
+                temperature["grady"][nexty, nextx])
+
+    def immune(self, temperature):
+        """
+        Return True if the person is immune (with buffer) given local
+        temperature.
+
+        Parameters
+        ----------
+        temperature : dict
+            temperature field
+
+        Returns
+        -------
+        bool
+        """
+        return self.immunity_ > self.get_temperature(temperature) + 0.1
+
+    def update(self, temperature):
+        """
+        Update position, speed and health of person
+
+        Parameters
+        ----------
+        temperature : dict
+            temperature field
+        """
+        self.move()
+        self.accelerate(temperature)
+        self.update_health()
+        if self.immunity_ > 0.02:
+            self.immunity_ -= 0.02
+
+    def update_health(self):
+        """
+        Update person's health
+            - if infected and incubating, count down incubation time
+            - if infected and sick, increment health (recover)
+            - if not infected, do nothing
+        """
+        if not self.infected:
+            return
+        if not self.incubating:
+            # heal
+            self.health_ += self.decay_ * (1 - self.health)
+            if self.health_ >= 0.9:
+                # fully healed
+                self.immunity_ = self.immunity
+                self.health_ = 1
+                self.infected = False
+        else:
+            # still in incubation period
+            if self.incubation_ < 0.01:
+                self.incubating = False
+                self.health_ = 1.0 - self.severity_
+            else:
+                # count down incubation
+                self.incubation_ -= 1
+
+    def move(self):
+        """
+        Move person based on current velocity and range
+        """
+        vx, vy = self.velocity
+
+        if self.x + vx > self.xmax:
+            self.x = 2 * self.xmax - (self.x + vx)
+            self.dx *= -1
+        elif self.x + vx < self.xmin:
+            self.x = 2 * self.xmin - (self.x + vx)
+            self.dx *= -1
+        else:
+            self.x += vx
+
+        if self.y + vy > self.ymax:
+            self.y = 2 * self.ymax - (self.y + vy)
+            self.dy *= -1
+        elif self.y + vy < self.ymin:
+            self.y = 2 * self.ymin - (self.y + vy)
+            self.dy *= -1
+        else:
+            self.y += vy
+
+    def accelerate(self, temperature):
+        """
+        Accelerate away from hotspots
+
+        Parameters
+        ----------
+        temperature : dict
+            temperature field
+        """
+        if not self.infected:
+            dx, dy = self.get_temperature_gradient(temperature)
+            self.dx += self.hypochondria * dx
+            self.dy += self.hypochondria * dy
+
+    def infect(self, incubation_time, decay, severity, temperature=None):
+        """
+        (Try to) infect this person if immunity is weaker than local
+        temperature is hot.
+
+        Parameters
+        ----------
+        incubation_time : int
+            time before the person will become ill if infected
+        decay : float
+            rate of recovery if infected [TODO: change name)
+        severity : float
+            initial severity of disease if infected
+        temperature : dict
+            temperature field
+        """
+        if temperature is None:
+            temp0 = 1
+        else:
+            temp0 = self.get_temperature(temperature)
+        if np.random.random() < severity * (temp0 - self.immunity_):
+            # print(f"{temp0:.4f}\t {self.immunity_:.4f}")
+            self.severity_ = severity
+            self.decay_ = decay
+            self.incubation_ = incubation_time
+            self.incubating = True
+            self.infected = True
+
+    def __repr__(self):
+        return pformat({
+            "x": self.x,
+            "y": self.y,
+            "radius": self.radius,
+            "xmin": self.xmin,
+            "xmax": self.xmax,
+            "ymin": self.ymin,
+            "ymax": self.ymax,
+            "dx": self.dx,
+            "dy": self.dy,
+            "mobility": self.mobility,
+            "hypochondria": self.hypochondria,
+            "health": self.health_,
+            "incubation": self.incubation_,
+            "severity": self.severity_,
+            "immunity": self.immunity_,
+            "infected": self.infected
+        })
+
+    @staticmethod
+    def positions(people):
+        x = [person.x for person in people]
+        y = [person.y for person in people]
+        return np.array([x, y]).T
+
+    @staticmethod
+    def velocities(people):
+        dx = [np.cos(person.direction) * person.speed
+              for person in people]
+        dy = [np.sin(person.direction) * person.speed
+              for person in people]
+        return np.array([dx, dy]).T
+
+    @staticmethod
+    def healths(people):
+        return np.array([person.health for person in people])
+
+    @staticmethod
+    def immunities(people):
+        return np.array([person.immunity_ for person in people])
+
+    @staticmethod
+    def infected_people(people):
+        return [person for person in people if person.infected]
+
+    @staticmethod
+    def immune_people(people, temperature):
+        return [person for person in people if person.immune(temperature)]
+
+    @staticmethod
+    def susceptible_people(people, temperature):
+        return [person for person in people if ~person.immune(temperature)]
