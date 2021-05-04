@@ -46,6 +46,7 @@ class Infection:
         self.day_ = 0
         self.people_ = []
         self.temperature_ = None
+        self.infections_ = []
         # set walls
         for wall_config in configuration["mobility"]["walls"]:
             self.walls_.append(Wall(**wall_config))
@@ -125,10 +126,14 @@ class Infection:
                 incubation = random_choice(infect0["incubation"])
                 severity = random_choice(infect0["severity"])
                 healing_rate = random_choice(infect0["healing_rate"])
-                person.infect(incubation=incubation,
-                              healing_rate=healing_rate,
-                              severity=severity,
-                              temperature=self.temperature_)
+                result = person.infect(incubation=incubation,
+                                       healing_rate=healing_rate,
+                                       severity=severity,
+                                       temperature=self.temperature_)
+                if result is not None:
+                    # log the infection event
+                    result["day"] = self.day_
+                    self.infections_.append(result)
 
         # update people movement
         for person in self.people_:

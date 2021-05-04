@@ -6,6 +6,7 @@ Author:  Mark Fruman
 Email:   majorgowan@yahoo.com
 -------------------------------------------------------
 """
+import string
 import numpy as np
 
 
@@ -84,3 +85,19 @@ def random_choice(values_obj, size=None):
     if size is not None:
         return size * [values_obj]
     return values_obj
+
+
+def random_string(length=8):
+    """
+    Generate a random string of digits and letters.
+
+    Parameters
+    ----------
+    length : int
+
+    Returns
+    -------
+    str
+    """
+    return "".join(np.random.choice(list(string.ascii_letters)
+                                    + list(string.digits), length))

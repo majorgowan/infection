@@ -8,6 +8,7 @@ Email:   majorgowan@yahoo.com
 """
 import numpy as np
 from pprint import pformat
+from infection.utils import random_string
 
 
 class Person:
@@ -31,6 +32,7 @@ class Person:
     """
     def __init__(self, x, y, mobility, direction,
                  hypochondria, immunity):
+        self.id_ = random_string(8)
         self.x = x
         self.y = y
         self.dx = np.cos(direction)
@@ -237,6 +239,11 @@ class Person:
             initial severity of disease if infected
         temperature : Temperature object
             temperature field
+
+        Returns
+        -------
+        dict
+            description of the infection event
         """
         if temperature is None:
             temp0 = 1
@@ -248,6 +255,16 @@ class Person:
             self.incubation_ = incubation
             self.incubating = True
             self.infected = True
+            return {
+                "id_": self.id_,
+                "x": self.x,
+                "y": self.y,
+                "temperature": temp0,
+                "severity": severity,
+                "healing_rate": healing_rate,
+                "incubation": incubation
+            }
+        return None
 
     def __repr__(self):
         return pformat({
