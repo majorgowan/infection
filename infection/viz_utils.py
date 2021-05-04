@@ -69,7 +69,7 @@ def plot_frame(fig, people, temperature, walls):
     immunities = Person.immunities(immune_people)
     ax.scatter(positions[:, 0], positions[:, 1],
                s=point_size, c=immunities, marker="o",
-               cmap="Blues", vmin=-0.2, vmax=1)
+               cmap="Blues", vmin=-0.2, vmax=1.2)
 
     # plot the infected and susceptible people
     susceptible_people = Person.non_immune_people(people, temperature)

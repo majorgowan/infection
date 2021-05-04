@@ -6,6 +6,8 @@ Author:  Mark Fruman
 Email:   majorgowan@yahoo.com
 -------------------------------------------------------
 """
+import string
+import numpy as np
 
 
 def supdate(d, update, specials=None):
@@ -48,3 +50,54 @@ def supdate(d, update, specials=None):
                 d[kk].extend(v)
         else:
             d[k] = v
+
+
+def random_choice(values_obj, size=None):
+    """
+    Replace values_obj with a single value as follows:
+        - if values_obj is a list, select one element with uniform probability
+        - if values_obj is a dict with keys "dist" (str) and "params",
+          generate a value using the numpy.random function "dist" with
+          parameters "params"; e.g. for a non-uniform random choice:
+            {"dist": "choice",
+             "params": {"a": [choice_1, choice_2, choice_3],
+                        "p": [0.3, 0.5, 0.2]}}
+        - otherwise return values_obj unchanged
+
+    Parameters
+    ----------
+    values_obj : list or dict or object
+        value to be parsed
+    size : int
+        if specified, return a list of value
+
+    Returns
+    -------
+    number or object or list
+    """
+    if isinstance(values_obj, list):
+        return np.random.choice(values_obj, size=size)
+    if isinstance(values_obj, dict) and "dist" in values_obj:
+        params = {**values_obj.get("params"), **{"size": size}}
+        return getattr(np.random,
+                       values_obj["dist"])(**params)
+
+    if size is not None:
+        return size * [values_obj]
+    return values_obj
+
+
+def random_string(length=8):
+    """
+    Generate a random string of digits and letters.
+
+    Parameters
+    ----------
+    length : int
+
+    Returns
+    -------
+    str
+    """
+    return "".join(np.random.choice(list(string.ascii_letters)
+                                    + list(string.digits), length))

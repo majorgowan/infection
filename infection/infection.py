@@ -1,7 +1,7 @@
 import numpy as np
 from pprint import pformat
 from infection import Person, Temperature, Wall
-from infection.utils import supdate
+from infection.utils import supdate, random_choice
 
 
 class Infection:
@@ -14,33 +14,15 @@ class Infection:
                 "infectiousness": 0.1,
                 "linger": 0.1,
                 "hotspot_radius": 0.04,
-                "incubation": {
-                    "mean": 0,
-                    "sigma": 0
-                },
-                "immunity": {
-                    "mean": 2,
-                    "sigma": 0
-                },
-                "healing_rate": {
-                    "mean": 0.1,
-                    "sigma": 0
-                },
-                "severity": {
-                    "mean": 1,
-                    "sigma": 0
-                },
+                "incubation": 0,
+                "immunity": 2,
+                "healing_rate": 0.1,
+                "severity": 1,
                 "seasonality": 0.2
             },
             "mobility": {
-                "speed": {
-                    "mean": 0.02,
-                    "sigma": 0
-                },
-                "hypochondria": {
-                    "mean": 0.05,
-                    "sigma": 0
-                },
+                "speed": 0.02,
+                "hypochondria": 0.05,
                 "walls": [
                     {"orient": "h",
                      "x": [0, 1],
@@ -64,6 +46,7 @@ class Infection:
         self.day_ = 0
         self.people_ = []
         self.temperature_ = None
+        self.infections_ = []
         # set walls
         for wall_config in configuration["mobility"]["walls"]:
             self.walls_.append(Wall(**wall_config))
@@ -79,21 +62,13 @@ class Infection:
 
         # generate initial positions and speeds for people
         positions = np.random.random(size=(n_people, 2))
-        speeds = np.random.normal(size=n_people,
-                                  loc=mobility["speed"]["mean"],
-                                  scale=mobility["speed"]["sigma"])
+        speeds = random_choice(mobility["speed"], size=n_people)
         directions = 2 * np.pi * np.random.random(size=n_people)
 
         self.people_ = []
         for position, speed, direction in zip(positions, speeds, directions):
-            immunity = np.random.normal(
-                loc=infect0["immunity"]["mean"],
-                scale=infect0["immunity"]["sigma"]
-            )
-            hypochondria = np.random.normal(
-                loc=mobility["hypochondria"]["mean"],
-                scale=mobility["hypochondria"]["sigma"]
-            )
+            immunity = random_choice(infect0["immunity"])
+            hypochondria = random_choice(mobility["hypochondria"])
             self.people_.append(Person(x=position[0], y=position[1],
                                        mobility=speed, direction=direction,
                                        hypochondria=hypochondria,
@@ -105,18 +80,9 @@ class Infection:
                                     size=n_infected)
 
         for inf0 in infected:
-            incubation = int(np.random.normal(
-                loc=infect0["incubation"]["mean"],
-                scale=infect0["incubation"]["sigma"]
-            ))
-            severity = np.random.normal(
-                loc=infect0["severity"]["mean"],
-                scale=infect0["severity"]["sigma"]
-            )
-            healing_rate = np.random.normal(
-                loc=infect0["healing_rate"]["mean"],
-                scale=infect0["healing_rate"]["sigma"]
-            )
+            incubation = random_choice(infect0["incubation"])
+            severity = random_choice(infect0["severity"])
+            healing_rate = random_choice(infect0["healing_rate"])
             self.people_[inf0].infect(incubation=incubation,
                                       healing_rate=healing_rate,
                                       severity=severity)
@@ -149,30 +115,31 @@ class Infection:
                               * (1 + seasonality * np.cos(2 * np.pi
                                                           * self.day_ / 365)))
 
+        # update people's health
+        for person in self.people_:
+            person.update_health()
+
         # infect new people
         for person in Person.susceptible_people(self.people_,
                                                 self.temperature_):
             if np.random.random() < infectiousness:
-                incubation = int(np.random.normal(
-                    loc=infect0["incubation"]["mean"],
-                    scale=infect0["incubation"]["sigma"]
-                ))
-                severity = np.random.normal(
-                    loc=infect0["severity"]["mean"],
-                    scale=infect0["severity"]["sigma"]
-                )
-                healing_rate = np.random.normal(
-                    loc=infect0["healing_rate"]["mean"],
-                    scale=infect0["healing_rate"]["sigma"]
-                )
-                person.infect(incubation=incubation,
-                              healing_rate=healing_rate,
-                              severity=severity,
-                              temperature=self.temperature_)
+                incubation = random_choice(infect0["incubation"])
+                severity = random_choice(infect0["severity"])
+                healing_rate = random_choice(infect0["healing_rate"])
+                result = person.infect(incubation=incubation,
+                                       healing_rate=healing_rate,
+                                       severity=severity,
+                                       temperature=self.temperature_)
+                if result is not None:
+                    # log the infection event
+                    result["day"] = self.day_
+                    self.infections_.append(result)
 
-        # update people
+        # update people movement
         for person in self.people_:
-            person.update(self.temperature_, self.walls_)
+            person.accelerate(self.temperature_)
+        for person in self.people_:
+            person.move(self.walls_)
 
     def run(self, steps, random_seed=333, restart=False):
         """

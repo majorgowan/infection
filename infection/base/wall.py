@@ -11,7 +11,7 @@ from pprint import pformat
 
 class Wall:
     """
-    Class representing a temperature field
+    Class representing a physical barrier
 
     Parameters
     ----------

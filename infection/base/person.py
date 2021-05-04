@@ -8,6 +8,7 @@ Email:   majorgowan@yahoo.com
 """
 import numpy as np
 from pprint import pformat
+from infection.utils import random_string
 
 
 class Person:
@@ -31,6 +32,7 @@ class Person:
     """
     def __init__(self, x, y, mobility, direction,
                  hypochondria, immunity):
+        self.id_ = random_string(8)
         self.x = x
         self.y = y
         self.dx = np.cos(direction)
@@ -134,23 +136,6 @@ class Person:
         """
         return self.immunity_ > self.get_temperature(temperature) + 0.1
 
-    def update(self, temperature, walls):
-        """
-        Update position, speed and health of person
-
-        Parameters
-        ----------
-        temperature : Temperature object
-            temperature field
-        walls : list[Wall]
-            list of Wall objects
-        """
-        self.move(walls)
-        self.accelerate(temperature)
-        self.update_health()
-        if self.immunity_ > 0.02:
-            self.immunity_ -= 0.02
-
     def update_health(self):
         """
         Update person's health
@@ -162,7 +147,7 @@ class Person:
             return
         if not self.incubating:
             # heal
-            self.health_ += self.healing_rate_ * (1 - self.health)
+            self.health_ += self.healing_rate_ * (1 - self.health_)
             if self.health_ >= 0.9:
                 # fully healed
                 self.immunity_ = self.immunity
@@ -176,6 +161,10 @@ class Person:
             else:
                 # count down incubation
                 self.incubation_ -= 1
+
+        # wear off immunity
+        if self.immunity_ > 0.02:
+            self.immunity_ -= 0.02
 
     def move(self, walls):
         """
@@ -205,6 +194,10 @@ class Person:
                         # vertical wall
                         self.dx *= -1
 
+        # apply periodic bc at open boundary
+        pos2[0] = pos2[0] % 1
+        pos2[1] = pos2[1] % 1
+
         self.x, self.y = pos2
 
     def accelerate(self, temperature):
@@ -217,9 +210,19 @@ class Person:
             temperature field
         """
         if not self.infected:
+            length0 = np.sqrt(self.dx ** 2 + self.dy ** 2)
+
+            # get (negative) temperature gradient
             dx, dy = self.get_temperature_gradient(temperature)
+
             self.dx += self.hypochondria * dx
             self.dy += self.hypochondria * dy
+
+            # renormalize
+            length = np.sqrt(self.dx ** 2 + self.dy ** 2)
+            if length > 0:
+                self.dx *= length0 / length
+                self.dy *= length0 / length
 
     def infect(self, incubation, healing_rate, severity, temperature=None):
         """
@@ -236,17 +239,32 @@ class Person:
             initial severity of disease if infected
         temperature : Temperature object
             temperature field
+
+        Returns
+        -------
+        dict
+            description of the infection event
         """
         if temperature is None:
             temp0 = 1
         else:
             temp0 = self.get_temperature(temperature)
         if np.random.random() < severity * (temp0 - self.immunity_):
-            self.severity_ = severity
+            self.severity_ = max(1.0, severity)
             self.healing_rate_ = healing_rate
             self.incubation_ = incubation
             self.incubating = True
             self.infected = True
+            return {
+                "id_": self.id_,
+                "x": self.x,
+                "y": self.y,
+                "temperature": temp0,
+                "severity": severity,
+                "healing_rate": healing_rate,
+                "incubation": incubation
+            }
+        return None
 
     def __repr__(self):
         return pformat({

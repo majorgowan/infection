@@ -116,8 +116,8 @@ def main():
 
     if graph:
         fig, axs = plt.subplots(2, 1, sharex="all", figsize=(12, 6))
-        axs[0].plot(days, infecteds, label="% infected")
-        axs[0].plot(days, immunes, label="% immune")
+        axs[0].plot(days, infecteds, color="tomato", label="% infected")
+        axs[0].plot(days, immunes, color="steelblue", label="% immune")
         axs[0].legend()
         axs[1].plot(days, temperatures)
         axs[1].set_ylabel("mean temperature")
