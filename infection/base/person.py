@@ -208,9 +208,19 @@ class Person:
             temperature field
         """
         if not self.infected:
+            length0 = np.sqrt(self.dx ** 2 + self.dy ** 2)
+
+            # get (negative) temperature gradient
             dx, dy = self.get_temperature_gradient(temperature)
+
             self.dx += self.hypochondria * dx
             self.dy += self.hypochondria * dy
+
+            # renormalize
+            length = np.sqrt(self.dx ** 2 + self.dy ** 2)
+            if length > 0:
+                self.dx *= length0 / length
+                self.dy *= length0 / length
 
     def infect(self, incubation, healing_rate, severity, temperature=None):
         """
