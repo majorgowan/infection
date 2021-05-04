@@ -3,7 +3,7 @@
   "gridsize": 100,
   "initial_infection_fraction": 0.05,
   "infection": {
-    "infectiousness": 0.02,
+    "infectiousness": 0.1,
     "linger": 0.2,
     "hotspot_radius": 0.04,
     "incubation": {
@@ -19,8 +19,8 @@
       "sigma": 0
     },
     "severity": {
-      "mean": 1,
-      "sigma": 0
+      "mean": 0.5,
+      "sigma": 0.1
     },
     "seasonality": 0.4
   },

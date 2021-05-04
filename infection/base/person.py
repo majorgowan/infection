@@ -134,23 +134,6 @@ class Person:
         """
         return self.immunity_ > self.get_temperature(temperature) + 0.1
 
-    def update(self, temperature, walls):
-        """
-        Update position, speed and health of person
-
-        Parameters
-        ----------
-        temperature : Temperature object
-            temperature field
-        walls : list[Wall]
-            list of Wall objects
-        """
-        self.move(walls)
-        self.accelerate(temperature)
-        self.update_health()
-        if self.immunity_ > 0.02:
-            self.immunity_ -= 0.02
-
     def update_health(self):
         """
         Update person's health
@@ -162,7 +145,7 @@ class Person:
             return
         if not self.incubating:
             # heal
-            self.health_ += self.healing_rate_ * (1 - self.health)
+            self.health_ += self.healing_rate_ * (1 - self.health_)
             if self.health_ >= 0.9:
                 # fully healed
                 self.immunity_ = self.immunity
@@ -176,6 +159,10 @@ class Person:
             else:
                 # count down incubation
                 self.incubation_ -= 1
+
+        # wear off immunity
+        if self.immunity_ > 0.02:
+            self.immunity_ -= 0.02
 
     def move(self, walls):
         """
@@ -204,6 +191,10 @@ class Person:
                     else:
                         # vertical wall
                         self.dx *= -1
+
+        # apply periodic bc at open boundary
+        pos2[0] = pos2[0] % 1
+        pos2[1] = pos2[1] % 1
 
         self.x, self.y = pos2
 
@@ -242,7 +233,7 @@ class Person:
         else:
             temp0 = self.get_temperature(temperature)
         if np.random.random() < severity * (temp0 - self.immunity_):
-            self.severity_ = severity
+            self.severity_ = max(1.0, severity)
             self.healing_rate_ = healing_rate
             self.incubation_ = incubation
             self.incubating = True

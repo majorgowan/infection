@@ -77,7 +77,7 @@ class Temperature:
         self.grady[1:-1, :] = grady
 
     def __repr__(self):
-        max_temperature = self.temperature.max()
+        max_temperature = self.temperature.max(initial=0.0)
         mean_temperature = self.temperature.mean()
         max_gradient = (np.sqrt(self.gradx ** 2 + self.grady ** 2)).max()
 

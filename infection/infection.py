@@ -149,6 +149,10 @@ class Infection:
                               * (1 + seasonality * np.cos(2 * np.pi
                                                           * self.day_ / 365)))
 
+        # update people's health
+        for person in self.people_:
+            person.update_health()
+
         # infect new people
         for person in Person.susceptible_people(self.people_,
                                                 self.temperature_):
@@ -170,9 +174,11 @@ class Infection:
                               severity=severity,
                               temperature=self.temperature_)
 
-        # update people
+        # update people movement
         for person in self.people_:
-            person.update(self.temperature_, self.walls_)
+            person.accelerate(self.temperature_)
+        for person in self.people_:
+            person.move(self.walls_)
 
     def run(self, steps, random_seed=333, restart=False):
         """
