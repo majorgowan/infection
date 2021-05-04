@@ -1,0 +1,87 @@
+{
+  "n_people": 80,
+  "gridsize": 100,
+  "initial_infection_fraction": 0.1,
+  "infection": {
+    "infectiousness": 0.05,
+    "linger": 0.15,
+    "hotspot_radius": 0.04,
+    "incubation": {
+      "mean": 0,
+      "sigma": 0
+    },
+    "immunity": {
+      "mean": 2,
+      "sigma": 0.3
+    },
+    "healing_rate": {
+      "mean": 0.03,
+      "sigma": 0.005
+    },
+    "severity": {
+      "mean": 1.2,
+      "sigma": 0.1
+    },
+    "seasonality": 0.2
+  },
+  "mobility": {
+    "speed": {
+      "mean": 0.02,
+      "sigma": 0.005
+    },
+    "hypochondria": {
+      "mean": 0.05,
+      "sigma": 0
+    },
+    "walls": [
+      {
+        "orient": "h",
+        "x": [
+          0,
+          1
+        ],
+        "y": 0
+      },
+      {
+        "orient": "h",
+        "x": [
+          0,
+          1
+        ],
+        "y": 1
+      },
+      {
+        "orient": "v",
+        "x": 0,
+        "y": [
+          0,
+          1
+        ]
+      },
+      {
+        "orient": "v",
+        "x": 1,
+        "y": [
+          0,
+          1
+        ]
+      },
+      {
+        "orient": "v",
+        "x": 0.5,
+        "y": [
+          0.1,
+          0.9
+        ]
+      },
+      {
+        "orient": "h",
+        "x": [
+          0.1,
+          0.9
+        ],
+        "y": 0.5
+      }
+    ]
+  }
+}

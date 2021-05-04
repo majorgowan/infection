@@ -51,5 +51,20 @@ HTML(animation.to_html5_video())
 
 ### Command Line Interface
 ```
-infection <etc.>
+usage: infection [-h] [--steps STEPS] [-i INPUT_FILE] [-o OUTPUT_FILE]
+                 [--random_seed RANDOM_SEED] [--video] [--graph] [--verbose]
+
+epidemic simulator and visualizer
+
+optional arguments:
+  -h, --help                    show this help message and exit
+  --steps STEPS                 number of steps/days to simulate
+  -i INPUT_FILE                 json file with configuration, or one of quadrants, large_population
+  -o OUTPUT_FILE                file to which to write simulation output
+  --random_seed RANDOM_SEED     seed for random number generation
+  --video                       if set, generate an mp4 animation of simulation
+  --graph                       if set, plot infected/immune vs. day
+  --verbose                     if set, print results to screen
+
+EXAMPLE: infection --steps 100 -i quadrants -o my_results --video
 ```
