@@ -46,6 +46,7 @@ class Temperature:
         self.dx = xx[0, 1] - xx[0, 0]
         self.dy = yy[1, 0] - yy[0, 0]
         self.temperature = np.zeros(shape=xx.shape)
+        self.apparent_temperature = np.zeros(shape=xx.shape)
         self.gradx = np.zeros(shape=xx.shape)
         self.grady = np.zeros(shape=xx.shape)
 
@@ -58,21 +59,32 @@ class Temperature:
         people : People objects
             determine new temperature field after update
         """
-        amplitude = self.intensity / np.sqrt(2 * np.pi) / self.hotspot_radius
+        amplitude = self.intensity / (4 * np.pi) / self.hotspot_radius
 
         temp0 = np.zeros(shape=self.temperature.shape)
         for person in people:
-            if person.infected:
+            if person.infected and not person.incubating:
                 dist2 = (self.xx - person.x) ** 2 + (self.yy - person.y) ** 2
                 temp0 += (amplitude
                           * np.exp(-0.5 * dist2 / self.hotspot_radius ** 2))
-        self.temperature = self.linger * self.temperature + temp0
 
-        # compute gradient
-        gradx = -0.5 * (self.temperature[:, 2:]
-                        - self.temperature[:, :-2]) / self.dx
-        grady = -0.5 * (self.temperature[2:, :]
-                        - self.temperature[:-2, :]) / self.dy
+        # apparent temperature based on symptomatic people
+        self.apparent_temperature = temp0.copy()
+
+        for person in people:
+            if person.infected and person.incubating:
+                dist2 = (self.xx - person.x) ** 2 + (self.yy - person.y) ** 2
+                temp0 += (amplitude
+                          * np.exp(-0.5 * dist2 / self.hotspot_radius ** 2))
+        # actual temperature includes incubating people and linger
+        self.temperature = ((self.linger * self.temperature + temp0)
+                            / (1.0 + self.linger))
+
+        # compute gradient of apparent temperature
+        gradx = -0.5 * (self.apparent_temperature[:, 2:]
+                        - self.apparent_temperature[:, :-2]) / self.dx
+        grady = -0.5 * (self.apparent_temperature[2:, :]
+                        - self.apparent_temperature[:-2, :]) / self.dy
         self.gradx[:, 1:-1] = gradx
         self.grady[1:-1, :] = grady
 
@@ -84,6 +96,8 @@ class Temperature:
         return pformat(
             {
                 "gridsize": self.gridsize,
+                "intensity": self.intensity,
+                "linger": self.linger,
                 "max_temperature": f"{max_temperature:.3f}",
                 "mean_temperature": f"{mean_temperature:.3f}",
                 "max_gradient": f"{max_gradient:.3f}"

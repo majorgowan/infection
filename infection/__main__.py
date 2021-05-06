@@ -1,10 +1,11 @@
 import os
 import json
+from contextlib import ExitStack
 from argparse import ArgumentParser
 from infection import Infection
 from infection import viz_utils as vzu
 import matplotlib.pyplot as plt
-from celluloid import Camera
+import matplotlib.animation as manimation
 
 
 def gen_arg_parser():
@@ -74,45 +75,48 @@ def main():
             configuration = json.load(jsf)
 
     fig = None
-    camera = None
+    scatter = None
+    qcs = None
+    writer = None
+
+    runner = Infection(**configuration).initialize_all(random_seed=random_seed)
 
     if video:
-        fig = plt.figure(figsize=(10, 10))
-        camera = Camera(fig)
-
-    runner = Infection(**configuration)
+        writer_class = manimation.writers["ffmpeg"]
+        metadata = dict(title="Infection!!", artist="Matplotlib",
+                        comment="infection animation")
+        writer = writer_class(fps=24, metadata=metadata)
+        fig, scatter, qcs = vzu.init_frame(runner, figsize=(12, 12))
 
     days = []
     infecteds = []
     immunes = []
     temperatures = []
 
-    for day, n_infected, n_immune in runner.run(steps=steps,
-                                                random_seed=random_seed,
-                                                restart=True):
-        n_people = len(runner.people_)
-        mean_temp = runner.temperature_.temperature.mean()
-
-        days.append(day)
-        infecteds.append(100 * n_infected / n_people)
-        immunes.append(100 * n_immune / n_people)
-        temperatures.append(mean_temp)
-
+    with ExitStack() as stack:
         if video:
-            vzu.plot_frame(fig, runner.people_, runner.temperature_,
-                           runner.walls_)
-            camera.snap()
+            video_file = f"{output_file.split('.')[0]}.mp4"
+            stack.enter_context(writer.saving(fig, video_file, dpi=60))
 
-        if verbose:
-            if not day % 50:
-                print(f"day: {day:4d}\t"
-                      + f"infected: {100 * n_infected / n_people:4.2f}\t"
-                      + f"immune: {100 * n_immune / n_people:4.2f}\t"
-                      + f"mean_temp: {mean_temp:5.3f}")
+        for day, n_infected, n_immune in runner.run(steps=steps):
+            n_people = len(runner.people_)
+            mean_temp = runner.temperature_.temperature.mean()
 
-    if video:
-        animation = camera.animate()
-        animation.save(f"{output_file.split('.')[0]}.mp4")
+            days.append(day)
+            infecteds.append(100 * n_infected / n_people)
+            immunes.append(100 * n_immune / n_people)
+            temperatures.append(mean_temp)
+
+            if verbose:
+                if not day % 50:
+                    print(f"day: {day:4d}\t"
+                          + f"infected: {100 * n_infected / n_people:4.2f}\t"
+                          + f"immune: {100 * n_immune / n_people:4.2f}\t"
+                          + f"mean_temp: {mean_temp:5.3f}")
+
+            if video:
+                fig, scatter, qcs = vzu.update_frame(fig, scatter, qcs, runner)
+                writer.grab_frame()
 
     if graph:
         fig, axs = plt.subplots(2, 1, sharex="all", figsize=(12, 6))
