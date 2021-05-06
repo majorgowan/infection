@@ -85,8 +85,9 @@ def init_frame(infection0, figsize=None):
     healths = np.array([scatter_cmap(scatter_norm(p.health))
                         for p in people])
     positions = Person.positions(people)
-    scatter = ax.scatter(positions[:, 0], positions[:, 1],
-                         zorder=4, s=point_size, c=healths, marker="o",
+    scatter = ax.scatter(positions[:, 0], positions[:, 1], linewidths=0,
+                         zorder=4, s=point_size, c=healths,
+                         edgecolor="olive", marker="o",
                          cmap=scatter_cmap, norm=scatter_norm)
 
     ax.grid(None)
@@ -165,7 +166,10 @@ def update_frame(fig, scatter, qcs, infection0):
                             if not p.immune(temperature)
                             else scatter_cmap2(scatter_norm2(p.immunity_))
                             for p in people])
+    new_linewidths = np.array([0 if not p.incubating else 2 for p in people])
+
     scatter.set_facecolor(new_colours)
+    scatter.set_linewidth(new_linewidths)
 
     # reposition the people
     positions = Person.positions(people)
