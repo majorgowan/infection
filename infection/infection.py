@@ -141,7 +141,11 @@ class Infection:
         for person in self.people_:
             person.move(self.walls_)
 
-    def run(self, steps, random_seed=333, restart=False):
+    def initialize_all(self):
+        self.initialize_people()
+        self.initialize_temperature()
+
+    def run(self, steps, random_seed=333):
         """
         Run the simulation
 
@@ -151,8 +155,6 @@ class Infection:
             number of steps to run
         random_seed : int
             seed for initializing random generator
-        restart : bool
-            if True, reset temperature and people
 
         Returns
         -------
@@ -161,12 +163,11 @@ class Infection:
         # initialize random number generator
         np.random.seed(random_seed)
 
-        if restart:
+        if self.temperature_ is None:
             # initialize people and temperature
-            self.initialize_people()
-            self.initialize_temperature()
+            self.initialize_all()
 
-        for step in range(steps):
+        for _ in range(steps):
             self.day_ += 1
             self.update_people()
             self.temperature_.update(self.people_)
