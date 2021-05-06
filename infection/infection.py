@@ -144,6 +144,7 @@ class Infection:
     def initialize_all(self):
         self.initialize_people()
         self.initialize_temperature()
+        return self
 
     def run(self, steps, random_seed=333):
         """
