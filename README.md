@@ -5,7 +5,7 @@
 ```python
 from infection import Infection
 
-runner = Infection()
+runner = Infection().initialize_all(random_seed=333)
 
 # lists to log state each day
 days = []
@@ -13,8 +13,7 @@ infecteds = []
 immunes = []
 
 # iterate over days
-for day, n_infected, n_immune in runner.run(steps=2000, random_seed=333,
-                                            restart=True):
+for day, n_infected, n_immune in runner.run(steps=2000):
     days.append(day)
     infecteds.append(n_infected)
     immunes.append(n_immune)
@@ -25,28 +24,26 @@ for day, n_infected, n_immune in runner.run(steps=2000, random_seed=333,
 ```python
 from infection import Infection
 from infection import viz_utils as vzu
-import matplotlib.pyplot as plt
-from celluloid import Camera
-from IPython.display import HTML
+import matplotlib.animation as manimation
 
-fig = plt.figure(figsize=(10, 10))
-camera = Camera(fig)
+writer = manimation.writers["ffmpeg"](fps=12)
 
-runner = Infection()
+runner = Infection().initialize_all(random_seed=333)
 
-# iterate over days
-for day, n_infected, n_immune in runner.run(steps=100, random_seed=333,
-                                            restart=True):
-    # add next frame to camera
-    vzu.plot_frame(fig, runner.people_, runner.temperature_, runner.walls_)
-    camera.snap()
+# initialize plotting frame
+fig, scatter, qcs = vzu.init_frame(runner)
 
-animation = camera.animate()
-# save animation to file
-animation.save("animation.mp4")
-
+# context for file to write animation
+with writer.saving(fig, "my_animation.mp4", dpi=60):
+    # iterate over days
+    for day, n_infected, n_immune in runner.run(steps=100):
+        # generate next frame
+        fig, scatter, qcs = vzu.update_frame(fig, scatter, qcs, runner)
+        # write frame
+        writer.grab_frame()
+        
 # display animation in jupyter notebook
-HTML(animation.to_html5_video())
+vzu.display_html("my_animation.mp4")
 ```
 
 ### Command Line Interface

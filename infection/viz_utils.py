@@ -11,6 +11,8 @@ import matplotlib.pyplot as plt
 import matplotlib.cm
 import matplotlib.colors
 from infection.base import Person
+from IPython.display import HTML
+
 
 plt.style.use("bmh")
 
@@ -176,3 +178,14 @@ def update_frame(fig, scatter, qcs, infection0):
     scatter.set_offsets(positions)
 
     return fig, scatter, qcs
+
+
+def display_html(filename):
+    return HTML(
+        """
+        <div align="middle">
+        <video width="80%" controls>
+              <source src="{0:s}" type="video/mp4">
+        </video></div>
+        """.format(filename)
+    )
