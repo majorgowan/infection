@@ -79,7 +79,7 @@ def main():
     qcs = None
     writer = None
 
-    runner = Infection(**configuration).initialize_all()
+    runner = Infection(**configuration).initialize_all(random_seed=random_seed)
 
     if video:
         writer_class = manimation.writers["ffmpeg"]
@@ -96,10 +96,9 @@ def main():
     with ExitStack() as stack:
         if video:
             video_file = f"{output_file.split('.')[0]}.mp4"
-            stack.enter_context(writer.saving(fig, video_file, dpi=100))
+            stack.enter_context(writer.saving(fig, video_file, dpi=60))
 
-        for day, n_infected, n_immune in runner.run(steps=steps,
-                                                    random_seed=random_seed):
+        for day, n_infected, n_immune in runner.run(steps=steps):
             n_people = len(runner.people_)
             mean_temp = runner.temperature_.temperature.mean()
 

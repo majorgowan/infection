@@ -42,7 +42,7 @@ class Person:
         self.health_ = 1
         self.incubation_ = 0
         self.severity_ = 0
-        self.immunity = immunity
+        self.full_immunity = immunity
         self.immunity_ = 0
         self.infected = False
         self.incubating = False
@@ -143,28 +143,24 @@ class Person:
             - if infected and sick, increment health (recover)
             - if not infected, do nothing
         """
-        if not self.infected:
-            return
-        if not self.incubating:
-            # heal
+        if self.incubating:
+            # case incubating: count down incubation
+            self.incubation_ -= 1
+            if self.incubation_ < 0.01:
+                # finished incubation
+                self.incubating = False
+                self.health_ = max(0.0, 1.0 - self.severity_)
+        elif self.infected:
+            # case infected and not incubating: heal ("decay" health)
             self.health_ += self.healing_rate_ * (1 - self.health_)
             if self.health_ >= 0.9:
-                # fully healed
-                self.immunity_ = self.immunity
-                self.health_ = 1
+                # fully healed, reset immunity
+                self.health_ = 1.0
                 self.infected = False
+                self.immunity_ = self.full_immunity
         else:
-            # still in incubation period
-            if self.incubation_ < 0.01:
-                self.incubating = False
-                self.health_ = 1.0 - self.severity_
-            else:
-                # count down incubation
-                self.incubation_ -= 1
-
-        # wear off immunity
-        if self.immunity_ > 0.02:
-            self.immunity_ -= 0.02
+            # not infected, decay immunity
+            self.immunity_ = max(0.0, self.immunity_ - 0.01)
 
     def move(self, walls):
         """
@@ -245,11 +241,17 @@ class Person:
         dict
             description of the infection event
         """
+        infect_flag = False
         if temperature is None:
+            # deliberate infection!
+            infect_flag = True
             temp0 = 1
         else:
             temp0 = self.get_temperature(temperature)
-        if np.random.random() < severity * (temp0 - self.immunity_):
+            if np.random.random() < severity * (temp0 - self.immunity_):
+                infect_flag = True
+
+        if infect_flag:
             self.severity_ = max(1.0, severity)
             self.healing_rate_ = healing_rate
             self.incubation_ = incubation
@@ -277,6 +279,7 @@ class Person:
             "health": self.health_,
             "incubation": self.incubation_,
             "severity": self.severity_,
+            "full_immunity": self.full_immunity,
             "immunity": self.immunity_,
             "infected": self.infected
         })
