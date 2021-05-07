@@ -2,6 +2,11 @@
 Package for dynamic simulation of transmission in epidemic of non-lethal pathogen
 ![sample animation](static/example_animation.gif)
 
+### Installation
+```
+pip install git+https://github.com/majorgowan/infection.git
+```
+
 ### Basic usage
 ```python
 from infection import Infection
