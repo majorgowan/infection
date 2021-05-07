@@ -186,6 +186,11 @@ class Infection:
 
     def configure(self, update):
         supdate(self.configuration, update)
+        # reset walls
+        self.walls_ = []
+        for wall_config in self.configuration["mobility"]["walls"]:
+            self.walls_.append(Wall(**wall_config))
+        return self
 
     def __repr__(self):
         return pformat({
