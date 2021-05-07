@@ -38,7 +38,7 @@ def init_frame(infection0, figsize=None):
         contour plot data
     """
     if figsize is None:
-        figsize = (12, 10)
+        figsize = (12, 12)
 
     fig = plt.figure(figsize=figsize)
 
