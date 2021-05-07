@@ -1,5 +1,11 @@
 ## Infection
-* Package for dynamic simulation of transmission in epidemic of non-lethal infection
+Package for dynamic simulation of transmission in epidemic of non-lethal pathogen
+![sample animation](static/example_animation.gif)
+
+### Installation
+```
+pip install git+https://github.com/majorgowan/infection.git
+```
 
 ### Basic usage
 ```python
@@ -18,7 +24,6 @@ for day, n_infected, n_immune in runner.run(steps=2000):
     infecteds.append(n_infected)
     immunes.append(n_immune)
 ```
-
 
 ### Usage with animation
 ```python

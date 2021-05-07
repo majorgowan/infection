@@ -52,7 +52,7 @@ def supdate(d, update, specials=None):
             d[k] = v
 
 
-def random_choice(values_obj, size=None):
+def random_choice(values_obj, size=None, positive=True):
     """
     Replace values_obj with a single value as follows:
         - if values_obj is a list, select one element with uniform probability
@@ -70,6 +70,8 @@ def random_choice(values_obj, size=None):
         value to be parsed
     size : int
         if specified, return a list of value
+    positive : bool
+        if set, return absolute value of result (numpy distribution only)
 
     Returns
     -------
@@ -79,9 +81,12 @@ def random_choice(values_obj, size=None):
         return np.random.choice(values_obj, size=size)
     if isinstance(values_obj, dict) and "dist" in values_obj:
         params = {**values_obj.get("params"), **{"size": size}}
-        return getattr(np.random,
-                       values_obj["dist"])(**params)
-
+        result = getattr(np.random,
+                         values_obj["dist"])(**params)
+        if positive:
+            return np.abs(result)
+        else:
+            return result
     if size is not None:
         return size * [values_obj]
     return values_obj
